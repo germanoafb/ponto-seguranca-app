@@ -1,3 +1,8 @@
+# Next.js generated files
+next-env.d.ts
+.next/
+out/
+
 # Logs
 logs
 *.log
