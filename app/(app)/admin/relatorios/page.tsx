@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatDateTimeBr } from "../../../../lib/datetime";
 
 type User = { email: string; role: string };
 
@@ -10,12 +11,13 @@ type Registro = {
   email: string;
   nome: string;
   tipo: string;
+  selfieUrl: string | null;
   observacao: string | null;
 };
 
 export default function RelatoriosPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [targetEmail, setTargetEmail] = useState("");
+  const [query, setQuery] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +42,7 @@ export default function RelatoriosPage() {
 
     try {
       const params = new URLSearchParams({ requesterEmail: user.email });
-      if (targetEmail) params.set("targetEmail", targetEmail);
+      if (query) params.set("query", query);
       if (from) params.set("from", from);
       if (to) params.set("to", to);
 
@@ -71,9 +73,9 @@ export default function RelatoriosPage() {
 
         <div className="grid gap-3 sm:grid-cols-4">
           <input
-            value={targetEmail}
-            onChange={(e) => setTargetEmail(e.target.value)}
-            placeholder="Email do segurança"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Nome ou email do segurança"
             className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
           />
           <input
@@ -108,22 +110,37 @@ export default function RelatoriosPage() {
                 <th className="py-2 pr-3">Nome</th>
                 <th className="py-2 pr-3">Email</th>
                 <th className="py-2 pr-3">Tipo</th>
+                <th className="py-2 pr-3">Selfie</th>
                 <th className="py-2 pr-3">Observação</th>
               </tr>
             </thead>
             <tbody>
               {registros.map((item, index) => (
                 <tr key={`${item.criadoEmIso}-${index}`} className="border-b border-slate-100 dark:border-slate-800">
-                  <td className="py-2 pr-3">{item.dataLocal || item.criadoEmIso}</td>
+                  <td className="py-2 pr-3">{item.dataLocal || formatDateTimeBr(item.criadoEmIso)}</td>
                   <td className="py-2 pr-3">{item.nome}</td>
                   <td className="py-2 pr-3">{item.email}</td>
                   <td className="py-2 pr-3">{item.tipo}</td>
+                  <td className="py-2 pr-3">
+                    {item.selfieUrl ? (
+                      <a
+                        href={item.selfieUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Ver selfie
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                   <td className="py-2 pr-3">{item.observacao || "-"}</td>
                 </tr>
               ))}
               {registros.length === 0 && (
                 <tr>
-                  <td className="py-3 text-slate-500" colSpan={5}>
+                  <td className="py-3 text-slate-500" colSpan={6}>
                     Nenhum resultado.
                   </td>
                 </tr>

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const requesterEmail = searchParams.get("requesterEmail")?.trim().toLowerCase();
-    const targetEmail = searchParams.get("targetEmail")?.trim().toLowerCase();
+    const query = searchParams.get("query")?.trim().toLowerCase();
     const from = toIsoOrNull(searchParams.get("from"));
     const to = toIsoOrNull(searchParams.get("to"));
 
@@ -37,7 +37,13 @@ export async function GET(request: NextRequest) {
     const registros = await listPontoRegistros();
 
     const filtrados = registros
-      .filter((registro) => (targetEmail ? registro.email === targetEmail : true))
+      .filter((registro) => {
+        if (!query) return true;
+        return (
+          registro.email.toLowerCase().includes(query) ||
+          registro.nome.toLowerCase().includes(query)
+        );
+      })
       .filter((registro) => {
         const ts = new Date(registro.criadoEmIso).getTime();
         if (from && ts < new Date(from).getTime()) return false;

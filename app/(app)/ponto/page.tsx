@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentLocation } from "../../../lib/geolocation";
+import CameraCapture from "../../../components/CameraCapture";
+import { formatDateTimeBr } from "../../../lib/datetime";
 
 type PontoTipo = "entrada" | "inicio_descanso" | "fim_descanso" | "saida";
 
@@ -29,6 +31,7 @@ export default function PontoPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [registros, setRegistros] = useState<Registro[]>([]);
+  const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -58,6 +61,10 @@ export default function PontoPage() {
 
   const baterPonto = async () => {
     if (!user?.email) return;
+    if (!selfieDataUrl) {
+      setError("A selfie é obrigatória para registrar o ponto.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -65,6 +72,21 @@ export default function PontoPage() {
 
     try {
       const location = await getCurrentLocation().catch(() => null);
+      const uploadResponse = await fetch("/api/upload/selfie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          selfieDataUrl,
+        }),
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok || !uploadData?.selfieUrl) {
+        setError(uploadData.error || "Erro ao enviar selfie.");
+        return;
+      }
 
       const response = await fetch("/api/ponto", {
         method: "POST",
@@ -74,6 +96,7 @@ export default function PontoPage() {
           tipo,
           latitude: location?.latitude,
           longitude: location?.longitude,
+          selfieUrl: uploadData.selfieUrl,
           observacao: observacao || null,
         }),
       });
@@ -87,6 +110,7 @@ export default function PontoPage() {
 
       setSuccess("Ponto registrado com sucesso.");
       setObservacao("");
+      setSelfieDataUrl(null);
       await loadRegistros(user.email);
     } catch {
       setError("Erro de conexão ao registrar ponto.");
@@ -127,6 +151,8 @@ export default function PontoPage() {
           />
         </div>
 
+        <CameraCapture selfieDataUrl={selfieDataUrl} onChange={setSelfieDataUrl} />
+
         <button
           onClick={baterPonto}
           disabled={!canRegister || loading}
@@ -150,7 +176,7 @@ export default function PontoPage() {
             <tbody>
               {registros.map((registro, index) => (
                 <tr key={`${registro.criadoEmIso}-${index}`} className="border-b border-slate-100 dark:border-slate-800">
-                  <td className="py-2 pr-3">{registro.dataLocal || registro.criadoEmIso}</td>
+                  <td className="py-2 pr-3">{registro.dataLocal || formatDateTimeBr(registro.criadoEmIso)}</td>
                   <td className="py-2 pr-3">{registro.tipo}</td>
                   <td className="py-2 pr-3">{registro.observacao || "-"}</td>
                 </tr>

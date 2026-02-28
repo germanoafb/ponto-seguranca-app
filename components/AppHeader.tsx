@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 type User = {
   id: string;
@@ -21,8 +21,13 @@ function linkClass(active: boolean): string {
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const user = useMemo(() => {
-    if (typeof window === "undefined") return null;
+    if (!isClient) return null;
     const raw = localStorage.getItem("user");
     if (!raw) return null;
     try {
@@ -32,7 +37,7 @@ export function AppHeader() {
       localStorage.removeItem("authToken");
       return null;
     }
-  }, []);
+  }, [isClient]);
 
   const logout = () => {
     localStorage.removeItem("user");

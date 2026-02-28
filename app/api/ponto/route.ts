@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appendPontoRegistro, listPontoRegistros, PontoTipo } from "../../../lib/sheets-ponto";
 import { supabaseServer } from "../../../lib/supabase-server";
+import { formatDateTimeBr } from "../../../lib/datetime";
 
 const MIN_BREAK_MINUTES = 20;
 
@@ -67,6 +68,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!selfieUrl || !String(selfieUrl).trim()) {
+      return NextResponse.json(
+        { error: "Selfie é obrigatória para registrar ponto." },
+        { status: 400 }
+      );
+    }
+
     const tipos: PontoTipo[] = ["entrada", "inicio_descanso", "fim_descanso", "saida"];
     if (!tipos.includes(tipo)) {
       return NextResponse.json({ error: "Tipo de ponto inválido." }, { status: 400 });
@@ -127,11 +135,7 @@ export async function POST(request: NextRequest) {
 
     await appendPontoRegistro({
       criadoEmIso: now.toISOString(),
-      dataLocal: new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "medium",
-        timeZone: "America/Sao_Paulo",
-      }).format(now),
+      dataLocal: formatDateTimeBr(now),
       email: normalizedEmail,
       nome: cadastro.name,
       role: cadastro.role,
