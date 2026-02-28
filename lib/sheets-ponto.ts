@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { createPrivateKey, createSign } from "node:crypto";
 
 export type PontoTipo = "entrada" | "inicio_descanso" | "fim_descanso" | "saida";
 
@@ -23,6 +23,19 @@ function base64UrlEncode(value: string | Buffer): string {
     .replace(/\//g, "_");
 }
 
+function normalizePrivateKey(rawPrivateKey: string): string {
+  let key = rawPrivateKey.trim();
+
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  return key.replace(/\\r/g, "\r").replace(/\\n/g, "\n").trim();
+}
+
 async function getGoogleAccessToken(): Promise<string> {
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const rawPrivateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
@@ -33,7 +46,7 @@ async function getGoogleAccessToken(): Promise<string> {
     );
   }
 
-  const privateKey = rawPrivateKey.replace(/\\n/g, "\n");
+  const privateKey = normalizePrivateKey(rawPrivateKey);
   const now = Math.floor(Date.now() / 1000);
 
   const header = { alg: "RS256", typ: "JWT" };
@@ -51,7 +64,17 @@ async function getGoogleAccessToken(): Promise<string> {
 
   const signer = createSign("RSA-SHA256");
   signer.update(unsignedJwt);
-  const signature = signer.sign(privateKey);
+
+  let signature: Buffer;
+  try {
+    const privateKeyObject = createPrivateKey({ key: privateKey, format: "pem" });
+    signature = signer.sign(privateKeyObject);
+  } catch {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY inválida. Na Vercel, salve a chave completa em PEM com \\n (sem truncar)."
+    );
+  }
+
   const signedJwt = `${unsignedJwt}.${base64UrlEncode(signature)}`;
 
   const body = new URLSearchParams({

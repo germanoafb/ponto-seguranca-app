@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../../lib/supabase-server";
 
-function parseDataUrl(dataUrl: string): { contentType: string; buffer: Buffer; extension: string } | null {
+export const runtime = "nodejs";
+
+const MAX_SELFIE_BYTES = 2 * 1024 * 1024;
+
+function decodeBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function parseDataUrl(
+  dataUrl: string
+): { contentType: string; bytes: Uint8Array; extension: string } | null {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) return null;
 
   const contentType = match[1];
   const base64Data = match[2];
-  const buffer = Buffer.from(base64Data, "base64");
+  const bytes = decodeBase64(base64Data);
 
   const extensionMap: Record<string, string> = {
     "image/jpeg": "jpg",
@@ -17,7 +32,7 @@ function parseDataUrl(dataUrl: string): { contentType: string; buffer: Buffer; e
   };
 
   const extension = extensionMap[contentType] || "jpg";
-  return { contentType, buffer, extension };
+  return { contentType, bytes, extension };
 }
 
 export async function POST(request: NextRequest) {
@@ -36,13 +51,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Formato da selfie inválido." }, { status: 400 });
     }
 
+    if (parsed.bytes.byteLength > MAX_SELFIE_BYTES) {
+      return NextResponse.json(
+        { error: "A selfie excede o tamanho máximo permitido (2MB)." },
+        { status: 413 }
+      );
+    }
+
     const bucket = process.env.SUPABASE_SELFIE_BUCKET || "selfies-ponto";
     const safeEmail = String(email).trim().toLowerCase().replace(/[^a-z0-9@._-]/g, "");
     const filePath = `${safeEmail}/${Date.now()}-${Math.random().toString(36).slice(2)}.${parsed.extension}`;
 
     const { error: uploadError } = await supabaseServer.storage
       .from(bucket)
-      .upload(filePath, parsed.buffer, {
+      .upload(filePath, parsed.bytes, {
         contentType: parsed.contentType,
         upsert: false,
       });
@@ -54,7 +76,8 @@ export async function POST(request: NextRequest) {
     const { data } = supabaseServer.storage.from(bucket).getPublicUrl(filePath);
 
     return NextResponse.json({ success: true, selfieUrl: data.publicUrl });
-  } catch {
-    return NextResponse.json({ error: "Erro interno ao enviar selfie." }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro interno ao enviar selfie.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
