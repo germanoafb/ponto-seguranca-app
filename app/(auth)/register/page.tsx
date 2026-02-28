@@ -5,6 +5,23 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, User, Phone, Check, X } from "lucide-react";
 
+async function readApiPayload(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  const isDnsError =
+    text.includes("Could not find host") || text.includes("Cloudflare");
+
+  return {
+    error: isDnsError
+      ? "Nao foi possivel conectar ao Supabase. Confira NEXT_PUBLIC_SUPABASE_URL no .env.local."
+      : "Resposta inesperada do servidor.",
+  };
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -85,7 +102,7 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await readApiPayload(response);
 
       if (!response.ok) {
         setError(data.error || "Erro ao cadastrar");
@@ -93,9 +110,8 @@ export default function RegisterPage() {
       }
 
       setSuccess("Cadastro realizado com sucesso! Redirecionando para login...");
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      router.replace("/login");
+      return;
     } catch (err) {
       setError("Erro na requisição. Tente novamente.");
       console.error(err);
@@ -194,6 +210,20 @@ export default function RegisterPage() {
                   className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-colors"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Perfil
+              </label>
+              <select
+                name="role"
+                value="seguranca"
+                disabled
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-900 dark:text-white cursor-not-allowed"
+              >
+                <option value="seguranca">Segurança</option>
+              </select>
             </div>
 
             {/* Password */}

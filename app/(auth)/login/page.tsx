@@ -5,6 +5,23 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
+async function readApiPayload(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  const isDnsError =
+    text.includes("Could not find host") || text.includes("Cloudflare");
+
+  return {
+    error: isDnsError
+      ? "Nao foi possivel conectar ao Supabase. Confira NEXT_PUBLIC_SUPABASE_URL no .env.local."
+      : "Resposta inesperada do servidor.",
+  };
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -25,7 +42,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data = await readApiPayload(response);
 
       if (!response.ok) {
         setError(data.error || "Erro ao fazer login");
@@ -132,7 +149,7 @@ export default function LoginPage() {
           </form>
 
           {/* Register Link */}
-          <div className="text-center">
+          <div className="text-center space-y-1">
             <p className="text-slate-600 dark:text-slate-400">
               Não tem conta?{" "}
               <Link
@@ -140,6 +157,14 @@ export default function LoginPage() {
                 className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
               >
                 Cadastre-se
+              </Link>
+            </p>
+            <p>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Esqueci minha senha
               </Link>
             </p>
           </div>

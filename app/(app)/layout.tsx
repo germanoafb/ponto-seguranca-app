@@ -1,12 +1,9 @@
+import { AppShell } from "../../components/AppShell";
+
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div>
-      {/* Layout para as páginas da aplicação */}
-      {children}
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 }
