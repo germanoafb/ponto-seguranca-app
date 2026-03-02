@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appendPontoRegistro, listPontoRegistros, PontoTipo } from "../../../lib/sheets-ponto";
+import { createPontoRegistro, listPontoRegistros, PontoTipo } from "../../../lib/pontos";
 import { supabaseServer } from "../../../lib/supabase-server";
 import { formatDateTimeBr } from "../../../lib/datetime";
 
@@ -22,17 +22,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Email é obrigatório." }, { status: 400 });
     }
 
-    const registros = await listPontoRegistros();
-
-    const filtrados = registros
-      .filter((registro) => registro.email === email)
-      .filter((registro) => {
-        const ts = new Date(registro.criadoEmIso).getTime();
-        if (from && ts < new Date(from).getTime()) return false;
-        if (to && ts > new Date(to).getTime()) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.criadoEmIso).getTime() - new Date(a.criadoEmIso).getTime());
+    const filtrados = await listPontoRegistros({
+      email,
+      fromIso: from,
+      toIso: to,
+    });
 
     return NextResponse.json({ success: true, registros: filtrados });
   } catch (error) {
@@ -101,10 +95,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (tipo === "fim_descanso") {
-      const registros = await listPontoRegistros();
-      const userRows = registros
-        .filter((item) => item.email === normalizedEmail)
-        .sort((a, b) => new Date(a.criadoEmIso).getTime() - new Date(b.criadoEmIso).getTime());
+      const userRows = (await listPontoRegistros({ email: normalizedEmail })).sort(
+        (a, b) => new Date(a.criadoEmIso).getTime() - new Date(b.criadoEmIso).getTime()
+      );
 
       const ultimoInicioDescanso = [...userRows].reverse().find((item) => item.tipo === "inicio_descanso");
 
@@ -133,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
 
-    await appendPontoRegistro({
+    await createPontoRegistro({
       criadoEmIso: now.toISOString(),
       dataLocal: formatDateTimeBr(now),
       email: normalizedEmail,

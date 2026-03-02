@@ -62,6 +62,40 @@ export default function RelatoriosPage() {
     }
   };
 
+  const exportarCsv = () => {
+    if (registros.length === 0) {
+      setError("Não há registros para exportar.");
+      return;
+    }
+
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const headers = ["Data", "Nome", "Email", "Tipo", "Selfie URL", "Observação"];
+
+    const rows = registros.map((item) => [
+      item.dataLocal || formatDateTimeBr(item.criadoEmIso),
+      item.nome || "",
+      item.email || "",
+      item.tipo || "",
+      item.selfieUrl || "",
+      item.observacao || "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => escapeCsv(String(cell))).join(","))
+      .join("\n");
+
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    anchor.href = url;
+    anchor.download = `relatorio-pontos-${date}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
+
   if (user && user.role !== "admin") {
     return <p className="text-red-600">Acesso permitido apenas para admin.</p>;
   }
@@ -71,7 +105,7 @@ export default function RelatoriosPage() {
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4">
         <h1 className="text-2xl font-bold">Relatórios</h1>
 
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-5">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -95,6 +129,12 @@ export default function RelatoriosPage() {
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
           >
             {loading ? "Buscando..." : "Buscar"}
+          </button>
+          <button
+            onClick={exportarCsv}
+            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            Exportar Excel (.csv)
           </button>
         </div>
 

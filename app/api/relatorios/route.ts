@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listPontoRegistros } from "../../../lib/sheets-ponto";
+import { listPontoRegistros } from "../../../lib/pontos";
 import { supabaseServer } from "../../../lib/supabase-server";
 
 function toIsoOrNull(value: string | null): string | null {
@@ -34,23 +34,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Acesso permitido apenas para admin." }, { status: 403 });
     }
 
-    const registros = await listPontoRegistros();
-
-    const filtrados = registros
-      .filter((registro) => {
-        if (!query) return true;
-        return (
-          registro.email.toLowerCase().includes(query) ||
-          registro.nome.toLowerCase().includes(query)
-        );
-      })
-      .filter((registro) => {
-        const ts = new Date(registro.criadoEmIso).getTime();
-        if (from && ts < new Date(from).getTime()) return false;
-        if (to && ts > new Date(to).getTime()) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.criadoEmIso).getTime() - new Date(a.criadoEmIso).getTime());
+    const filtrados = await listPontoRegistros({
+      query,
+      fromIso: from,
+      toIso: to,
+    });
 
     return NextResponse.json({ success: true, registros: filtrados });
   } catch (error) {
