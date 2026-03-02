@@ -1,6 +1,6 @@
 {
-  "name": "Ponto Segurança",
-  "short_name": "Ponto",
+  "name": "Folha de Ponto Titãs",
+  "short_name": "Titãs",
   "description": "Aplicação para registro de ponto de seguranças",
   "start_url": "/",
   "display": "standalone",

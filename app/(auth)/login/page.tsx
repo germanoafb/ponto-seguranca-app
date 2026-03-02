@@ -75,7 +75,7 @@ export default function LoginPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Ponto Segurança
+              Folha de Ponto Titãs
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
               Faça login para continuar
@@ -172,7 +172,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-              © 2026 Ponto Segurança. Todos os direitos reservados.
+              © 2026 Folha de Ponto Titãs. Todos os direitos reservados.
             </p>
           </div>
         </div>

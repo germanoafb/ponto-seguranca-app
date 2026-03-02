@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ponto Segurança",
+  title: "Folha de Ponto Titãs",
   description: "Sistema de controle de ponto com segurança",
 };
 

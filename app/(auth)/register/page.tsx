@@ -136,7 +136,7 @@ export default function RegisterPage() {
               Criar Conta
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
-              Inscreva-se no Ponto Segurança
+              Inscreva-se no Folha de Ponto Titãs
             </p>
           </div>
 
@@ -380,7 +380,7 @@ export default function RegisterPage() {
           {/* Footer */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-              © 2026 Ponto Segurança. Todos os direitos reservados.
+              © 2026 Folha de Ponto Titãs. Todos os direitos reservados.
             </p>
           </div>
         </div>
