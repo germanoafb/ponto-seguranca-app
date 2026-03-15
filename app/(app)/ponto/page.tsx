@@ -74,7 +74,7 @@ export default function PontoPage() {
 
     try {
       const location =
-        captureMeta?.latitude !== null && captureMeta?.longitude !== null
+        captureMeta && captureMeta.latitude !== null && captureMeta.longitude !== null
           ? { latitude: captureMeta.latitude, longitude: captureMeta.longitude }
           : await getCurrentLocation().catch(() => null);
       const uploadResponse = await fetch("/api/upload/selfie", {
