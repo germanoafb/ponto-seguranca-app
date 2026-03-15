@@ -8,12 +8,30 @@ type User = { email: string; role: string };
 type Registro = {
   criadoEmIso: string;
   dataLocal: string;
-  email: string;
-  nome: string;
-  tipo: string;
+  email: unknown;
+  nome: unknown;
+  tipo: unknown;
   selfieUrl: string | null;
-  observacao: string | null;
+  observacao: unknown;
 };
+
+function normalizeCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => normalizeCellValue(item))
+      .filter(Boolean)
+      .join(" | ");
+  }
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
 
 export default function RelatoriosPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -62,38 +80,38 @@ export default function RelatoriosPage() {
     }
   };
 
-  const exportarCsv = () => {
-    if (registros.length === 0) {
-      setError("Não há registros para exportar.");
-      return;
+  const exportarExcel = async () => {
+    if (!user?.email) return;
+
+    setError("");
+
+    try {
+      const params = new URLSearchParams({ requesterEmail: user.email });
+      if (query) params.set("query", query);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+
+      const response = await fetch(`/api/relatorios/export?${params.toString()}`);
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setError(data?.error || "Erro ao exportar planilha.");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      anchor.href = url;
+      anchor.download = `relatorio-pontos-${date}.xlsx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Erro de conexão ao exportar planilha.");
     }
-
-    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const headers = ["Data", "Nome", "Email", "Tipo", "Selfie URL", "Observação"];
-
-    const rows = registros.map((item) => [
-      item.dataLocal || formatDateTimeBr(item.criadoEmIso),
-      item.nome || "",
-      item.email || "",
-      item.tipo || "",
-      item.selfieUrl || "",
-      item.observacao || "",
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => escapeCsv(String(cell))).join(","))
-      .join("\n");
-
-    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    const date = new Date().toISOString().slice(0, 10);
-    anchor.href = url;
-    anchor.download = `relatorio-pontos-${date}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
   };
 
   if (user && user.role !== "admin") {
@@ -131,10 +149,10 @@ export default function RelatoriosPage() {
             {loading ? "Buscando..." : "Buscar"}
           </button>
           <button
-            onClick={exportarCsv}
+            onClick={exportarExcel}
             className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            Exportar Excel (.csv)
+            Exportar Excel (.xlsx)
           </button>
         </div>
 
@@ -158,9 +176,9 @@ export default function RelatoriosPage() {
               {registros.map((item, index) => (
                 <tr key={`${item.criadoEmIso}-${index}`} className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 pr-3">{item.dataLocal || formatDateTimeBr(item.criadoEmIso)}</td>
-                  <td className="py-2 pr-3">{item.nome}</td>
-                  <td className="py-2 pr-3">{item.email}</td>
-                  <td className="py-2 pr-3">{item.tipo}</td>
+                  <td className="py-2 pr-3">{normalizeCellValue(item.nome) || "-"}</td>
+                  <td className="py-2 pr-3">{normalizeCellValue(item.email) || "-"}</td>
+                  <td className="py-2 pr-3">{normalizeCellValue(item.tipo) || "-"}</td>
                   <td className="py-2 pr-3">
                     {item.selfieUrl ? (
                       <a
@@ -175,7 +193,7 @@ export default function RelatoriosPage() {
                       "-"
                     )}
                   </td>
-                  <td className="py-2 pr-3">{item.observacao || "-"}</td>
+                  <td className="py-2 pr-3">{normalizeCellValue(item.observacao) || "-"}</td>
                 </tr>
               ))}
               {registros.length === 0 && (

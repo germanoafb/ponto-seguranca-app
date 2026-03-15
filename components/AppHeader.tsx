@@ -9,7 +9,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "seguranca";
+  role: "admin" | "seguranca" | "bombeiro_civil";
 };
 
 function linkClass(active: boolean): string {
@@ -51,12 +51,20 @@ export function AppHeader() {
         <nav className="flex items-center gap-4 sm:gap-6">
           <Link href="/ponto" className={linkClass(pathname === "/ponto")}>Ponto</Link>
           {user?.role === "admin" && (
-            <Link
-              href="/admin/relatorios"
-              className={linkClass(pathname.startsWith("/admin"))}
-            >
-              Dashboard/Relatório
-            </Link>
+            <>
+              <Link
+                href="/admin/relatorios"
+                className={linkClass(pathname.startsWith("/admin/relatorios"))}
+              >
+                Dashboard/Relatório
+              </Link>
+              <Link
+                href="/admin/planilhas"
+                className={linkClass(pathname.startsWith("/admin/planilhas"))}
+              >
+                Criar Planilha
+              </Link>
+            </>
           )}
         </nav>
 

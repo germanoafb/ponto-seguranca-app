@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCurrentLocation } from "../../../lib/geolocation";
 import CameraCapture from "../../../components/CameraCapture";
+import type { CaptureMetadata } from "../../../components/CameraCapture";
 import { formatDateTimeBr } from "../../../lib/datetime";
 
 type PontoTipo = "entrada" | "inicio_descanso" | "fim_descanso" | "saida";
@@ -32,6 +33,7 @@ export default function PontoPage() {
   const [success, setSuccess] = useState("");
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
+  const [captureMeta, setCaptureMeta] = useState<CaptureMetadata | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -71,7 +73,10 @@ export default function PontoPage() {
     setSuccess("");
 
     try {
-      const location = await getCurrentLocation().catch(() => null);
+      const location =
+        captureMeta?.latitude !== null && captureMeta?.longitude !== null
+          ? { latitude: captureMeta.latitude, longitude: captureMeta.longitude }
+          : await getCurrentLocation().catch(() => null);
       const uploadResponse = await fetch("/api/upload/selfie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,6 +116,7 @@ export default function PontoPage() {
       setSuccess("Ponto registrado com sucesso.");
       setObservacao("");
       setSelfieDataUrl(null);
+      setCaptureMeta(null);
       await loadRegistros(user.email);
     } catch {
       setError("Erro de conexão ao registrar ponto.");
@@ -151,7 +157,11 @@ export default function PontoPage() {
           />
         </div>
 
-        <CameraCapture selfieDataUrl={selfieDataUrl} onChange={setSelfieDataUrl} />
+        <CameraCapture
+          selfieDataUrl={selfieDataUrl}
+          onChange={setSelfieDataUrl}
+          onMetadataChange={setCaptureMeta}
+        />
 
         <button
           onClick={baterPonto}

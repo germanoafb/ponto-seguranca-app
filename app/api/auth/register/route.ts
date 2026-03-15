@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "../../../../lib/supabase-server";
 import { hashPassword } from "../../../../lib/password";
 
+type AllowedRole = "seguranca" | "bombeiro_civil";
+
+function normalizeRole(value: unknown): AllowedRole {
+  const role = String(value || "seguranca").trim().toLowerCase();
+  return role === "bombeiro_civil" ? "bombeiro_civil" : "seguranca";
+}
+
 function mapErrorToPtBr(message?: string): string {
   const msg = (message || "").toLowerCase();
   if (msg.includes("could not find host") || msg.includes("dns")) {
@@ -24,7 +31,7 @@ function isPasswordStrong(password: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, phone, password } = await request.json();
+    const { name, email, phone, password, role } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -46,6 +53,7 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedName = String(name).trim();
     const normalizedPhone = phone ? String(phone).replace(/\D/g, "") : null;
+    const normalizedRole = normalizeRole(role);
     const localPasswordHash = hashPassword(String(password));
 
     const { data: existingUser, error: existingUserError } = await supabaseServer
@@ -99,7 +107,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         phone: normalizedPhone,
         password_hash: localPasswordHash,
-        role: "seguranca",
+        role: normalizedRole,
         active: true,
       }, { onConflict: "email" })
       .select("id, name, email, phone, role, active, created_at")

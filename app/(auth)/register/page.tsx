@@ -28,6 +28,7 @@ export default function RegisterPage() {
     name: "",
     email: "",
     phone: "",
+    role: "seguranca",
     password: "",
     confirmPassword: "",
   });
@@ -59,7 +60,7 @@ export default function RegisterPage() {
     return `(${numbers.slice(0, 2)})${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
     if (name === "phone") {
@@ -98,6 +99,7 @@ export default function RegisterPage() {
           name: formData.name,
           email: formData.email,
           phone: phoneNumbers,
+          role: formData.role,
           password: formData.password,
         }),
       });
@@ -214,15 +216,16 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Perfil
+                Cargo
               </label>
               <select
                 name="role"
-                value="seguranca"
-                disabled
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-900 dark:text-white cursor-not-allowed"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
                 <option value="seguranca">Segurança</option>
+                <option value="bombeiro_civil">Bombeiro Civil</option>
               </select>
             </div>
 
